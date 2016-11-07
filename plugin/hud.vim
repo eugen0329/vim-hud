@@ -3,17 +3,24 @@ if exists('g:loaded_hud')
 endif
 let g:loaded_hud = 1
 
-let g:hud = extend(get(g:, 'hud', {}), {
-      \ 'steps': ['▏', '▎', '▍', '▌', '▋', '▊', '▉', '█'],
-      \ 'eof': '▓',
-      \ 'blank': ' ',
-      \ 'width': 14,
-      \}, 'keep')
+if !exists('g:hud')
+  let g:hud = {}
+endif
 
-let s:blank = g:hud.blank
-let s:steps = g:hud.steps
-let s:width = g:hud.width
-let s:eof = g:hud.eof
+" If {steps} given, assign last step char to {eof} by default
+if has_key(g:hud, 'steps')
+  let s:steps = g:hud.steps
+  let s:eof = get(g:hud, 'eof', s:steps[-1])
+elseif has('multi_byte') && (&termencoding ==# 'utf-8' || &encoding ==# 'utf-8')
+  let s:steps = ['▏', '▎', '▍', '▌', '▋', '▊', '▉', '█']
+  let s:eof = get(g:hud, 'eof', '▓')
+else
+  let s:steps = ['-', '=', '#']
+  let s:eof = get(g:hud, 'eof', '$')
+endif
+
+let s:blank = get(g:hud, 'blank', ' ')
+let s:width = get(g:hud, 'width', 14)
 
 fu! Hud() abort
   let lcurr = line('.')
@@ -27,9 +34,9 @@ fu! Hud() abort
 
   let percent =  line('.') * 1.0 / line('$')
 
-  let filled =  float2nr(percent * s:width)
+  let nfilled =  float2nr(percent * s:width)
   let step = float2nr(percent * s:width * len(s:steps)) % len(s:steps)
-  let padding =  s:width - filled - 1
+  let padding =  s:width - nfilled - 1
 
-  return repeat(s:steps[-1], filled) . s:steps[step] . repeat(s:blank, padding)
+  return repeat(s:steps[-1], nfilled) . s:steps[step] . repeat(s:blank, padding)
 endfu
